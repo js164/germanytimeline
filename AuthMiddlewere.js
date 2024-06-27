@@ -43,11 +43,4 @@ module.exports = {
             }
         )(req, res, next);
     },
-    adminAuth: function (req, res, next) {
-                if (req.user && req.user.isAdmin) {
-                    return next();
-                }
-                res.send('400', { status: 400, message: "Not Valid Admin" })
-
-    }
 }

@@ -28,6 +28,7 @@ app.use(passport.initialize())
 app.use(passport.session())
 
 app.use('/auth',require('./routes/Auth/signup'))
+app.use('/university',require('./routes/Timeline/university'))
 
 port=process.env.PORT || 8000
 const connectDB=require('./db')

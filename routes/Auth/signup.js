@@ -18,7 +18,8 @@ route.get('/profile',jwtauth, function (req, res, next) {
 route.post('/signup', function (req, res) {
     const usermodel = new timelineUser({
         username: req.body.username,
-        password: hashSync(req.body.password, 10)
+        password: hashSync(req.body.password, 10),
+        userId: new Date().toISOString().replaceAll(/[-.:TZ]/g, '') + Math.random().toString().substring(2,7)
     })
     usermodel.save().then((user) => {
 
@@ -35,7 +36,8 @@ route.post('/signup', function (req, res) {
             user: {
                 username: user.username,
                 access_token: access_token,
-                refresh_token: refresh_token
+                refresh_token: refresh_token,
+                userId: user.userId
             }
         })
     }).catch(err => {
@@ -83,7 +85,8 @@ route.post('/login', (req, res) => {
                 user: {
                     username: user.username,
                     access_token: access_token,
-                    refresh_token: refresh_token
+                    refresh_token: refresh_token,
+                    userId: user.userId
                 }
             })
 
@@ -116,7 +119,8 @@ route.post('/refresh', function (req, res) {
                     success: true,
                     user: {
                         username: data.username,
-                        access_token: access_token
+                        access_token: access_token,
+                        userId: data.userId
                     }
                 })
             }
@@ -127,31 +131,6 @@ route.post('/refresh', function (req, res) {
 })
 
 
-
-route.get('/google',
-    passport.authenticate('google', { scope: ['profile'] })
-);
-
-route.get('/google/callback',
-    passport.authenticate('google', { 
-        failureRedirect: process.env.CLIENT_URL+ '/login' }),
-        // successRedirect: process.env.CLIENT_URL+ '/success'}));
-        function(req,res){
-
-            let payload = {
-                username: req.user.displayName,
-                _id: req.user._id,
-                isAdmin:false
-            }
-
-            const access_token = jwt.sign(payload, process.env.JWTtoken, { expiresIn: "3m" });
-            const refresh_token = jwt.sign(payload, process.env.JWTRefreshToken, { expiresIn: "30d" });
-
-            // window.location.replace(process.env.CLIENT_URL+ '/success',res)
-            res.redirect(process.env.CLIENT_URL+ '/success?username='+req.user.displayName+
-            '&access_token='+access_token+
-            '&refresh_token='+refresh_token)
-        });
 
 route.get('/logout',jwtauth, (req, res) => {
     req.logout(function(err) {

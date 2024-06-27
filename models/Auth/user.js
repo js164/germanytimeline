@@ -5,6 +5,10 @@ const timelineUser= new mongoose.Schema({
         type: String,
         default:JSON.stringify(Date.now),
     },
+    userId:{
+        type: String,
+        require:true
+    },
     displayName:{
         type: String,
     },

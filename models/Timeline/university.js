@@ -13,6 +13,10 @@ const universityTimeline= new mongoose.Schema({
         type: String,
         require:true
     },
+    courseName:{
+        type: String,
+        require:true
+    },
     applicationDate:{
         type: Date,
     },
@@ -20,6 +24,9 @@ const universityTimeline= new mongoose.Schema({
         type:Date,
     },
     interviewDate:{
+        type: Date,
+    },
+    resultDate:{
         type: Date,
     },
     result:{
