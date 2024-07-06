@@ -9,7 +9,10 @@ const timelineUser = require("../../models/Auth/user")
 route.get('/all/', jwtauth, async function(req,res){
     if (!res.headersSent) {
         try{
+            console.log("check");
+            console.log((req.user));
             const a= await universityTimeline.find({user:req.user._id})
+            console.log(a);
             res.send(200, { success: true, data: a })
         }catch(err){
             console.log(err)
@@ -41,5 +44,21 @@ route.post('/addUniversity',jwtauth,async function (req, res, next) {
     }
 
 });
+
+
+route.delete('/delete/:id', jwtauth, async function(req,res){
+    if (!res.headersSent) {
+        try{
+            const a= await universityTimeline.findById(req.params.id)
+            if(a){
+                await universityTimeline.findByIdAndDelete(req.params.id)
+                res.send(200, { success: true, message: "University successfully deleted!"})
+            }
+        }catch(err){
+            console.log(err)
+            res.send(500, { success: false, message: "Bad Request!" })
+        }
+    }
+})
 
 module.exports = route;
