@@ -21,7 +21,7 @@ route.get('/all/', jwtauth, async function(req,res){
     }
 })
 
-route.post('/addUniversity',jwtauth,async function (req, res, next) {
+route.post('/addUniversity', jwtauth, async function (req, res, next) {
     if (!res.headersSent) {
         try{
             const user = await timelineUser.findOne({_id: req.user._id})
@@ -36,6 +36,25 @@ route.post('/addUniversity',jwtauth,async function (req, res, next) {
             console.log(err);
             res.send(500, { success: false, message: err.message })
         })
+    }
+        catch(err){
+            console.log(err);
+            res.send(500, { success: false, message: err.message })
+        }
+    }
+
+});
+
+route.post('/updateUniversity/:id', jwtauth, async function (req, res, next) {
+    if (!res.headersSent) {
+        try{
+            const uni = await universityTimeline.findById(req.params.id)
+            if(uni){
+                const { universityName, courseName, applicationDate, examDate, interviewDate, resultDate, result, yourResponse} = req.body;
+                const data = { universityName, courseName, applicationDate, examDate, interviewDate, resultDate, result, yourResponse }
+                const univeristy = await universityTimeline.findByIdAndUpdate(req.params.id, data);
+                res.send(200, { success: true, data: univeristy , message:"University successfully updated!" })
+            }
     }
         catch(err){
             console.log(err);
