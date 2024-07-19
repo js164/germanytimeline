@@ -28,7 +28,7 @@ route.post('/signup', function (req, res) {
             _id: user._id
         }
 
-        const access_token = jwt.sign(payload, process.env.JWTtoken, { expiresIn: "3m" });
+        const access_token = jwt.sign(payload, process.env.JWTtoken, { expiresIn: "30m" });
         const refresh_token = jwt.sign(payload, process.env.JWTRefreshToken, { expiresIn: "30d" });
         res.send({
             success: true,
@@ -77,7 +77,7 @@ route.post('/login', (req, res) => {
                 _id: user._id
             }
 
-            const access_token = jwt.sign(payload, process.env.JWTtoken, { expiresIn: "3m" });
+            const access_token = jwt.sign(payload, process.env.JWTtoken, { expiresIn: "30m" });
             const refresh_token = jwt.sign(payload, process.env.JWTRefreshToken, { expiresIn: "30d" });
             return res.send({
                 success: true,
@@ -103,7 +103,7 @@ route.post('/refresh', function (req, res) {
                 res.send({
                     success: false,
                     message: "Invalid refresh token",
-                    status: 401,
+                    status: 403,
                     error: err.message
                 })
             }
@@ -113,7 +113,7 @@ route.post('/refresh', function (req, res) {
                     _id: data._id
                 }
 
-                const access_token = jwt.sign(payload, process.env.JWTtoken, { expiresIn: "3m" });
+                const access_token = jwt.sign(payload, process.env.JWTtoken, { expiresIn: "30m" });
                 
                 return res.send({
                     success: true,
