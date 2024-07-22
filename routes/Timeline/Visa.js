@@ -2,14 +2,14 @@ const express = require('express')
 const route = express.Router()
 const { jwtauth, adminAuth } = require('../../AuthMiddlewere')
 const timelineUser = require("../../models/Auth/user")
-const APSTimeline = require("../../models/Timeline/APS")
+const VisaTimeline = require("../../models/Timeline/Visa")
 
 route.get('/',jwtauth, async function(req, res, next){
     if (!res.headersSent) {
         try{
-            const aps = await APSTimeline.findOne({ user: req.user._id })
-            console.log(aps);
-            res.send(200, { success: true, data: aps, message: "APS Successfully fetched!" })
+            const Visa = await VisaTimeline.findOne({ user: req.user._id })
+            console.log(Visa);
+            res.send(200, { success: true, data: Visa, message: "Visa Successfully fetched!" })
         }catch(err){
             console.log(err);
             res.send(500, { success: false, message: err.message })
@@ -21,15 +21,15 @@ route.get('/',jwtauth, async function(req, res, next){
 route.post('/save', jwtauth, async function (req, res, next) {
     if (!res.headersSent) {
         const user = await timelineUser.findOne({ _id: req.user._id })
-        const aps = await APSTimeline.findOne({ user: user })
+        const Visa = await VisaTimeline.findOne({ user: user })
         try {
-            if (aps) {
-                const updateAPS = await APSTimeline.findByIdAndUpdate(aps._id, req.body);
-                res.send(200, { success: true, data: updateAPS, message: "APS Successfully saved!" })
+            if (Visa) {
+                const updateVisa = await VisaTimeline.findByIdAndUpdate(Visa._id, req.body);
+                res.send(200, { success: true, data: updateVisa, message: "Visa Successfully saved!" })
             } else {
-                const newAPS = new APSTimeline({...req.body,user});
-                newAPS.save().then(data => {
-                    res.send(200, { success: true, data: data, message: "APS Successfully saved!" })
+                const newVisa = new VisaTimeline({...req.body,user});
+                newVisa.save().then(data => {
+                    res.send(200, { success: true, data: data, message: "Visa Successfully saved!" })
                 }).catch(err => {
                     console.log(err);
                     res.send(500, { success: false, message: err.message })
