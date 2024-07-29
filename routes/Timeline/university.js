@@ -6,13 +6,23 @@ const fs = require('fs');
 const universityTimeline = require('../../models/Timeline/university')
 const timelineUser = require("../../models/Auth/user")
 
-route.get('/all/', jwtauth, async function(req,res){
+route.get('/all/', async function(req,res){
     if (!res.headersSent) {
         try{
-            console.log("check");
-            console.log((req.user));
-            const a= await universityTimeline.find({user:req.user._id})
+            const a= await universityTimeline.find().sort( { universityName: 1 } ).lean()
             console.log(a);
+            res.send(200, { success: true, data: a })
+        }catch(err){
+            console.log(err)
+            res.send(500, { success: false, message: "Bad Request!" })
+        }
+    }
+})
+
+route.get('/myuniversity/all/', jwtauth, async function(req,res){
+    if (!res.headersSent) {
+        try{
+            const a= await universityTimeline.find({user:req.user._id})
             res.send(200, { success: true, data: a })
         }catch(err){
             console.log(err)
