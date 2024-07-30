@@ -17,6 +17,18 @@ route.get('/',jwtauth, async function(req, res, next){
     }
 })
 
+route.get('/all', async function(req, res, next){
+    if (!res.headersSent) {
+        try{
+            const aps = await APSTimeline.find().sort( { appliedDate: -1 } ).lean()
+            console.log(aps);
+            res.send(200, { success: true, data: aps, message: "Visa Successfully fetched!" })
+        }catch(err){
+            console.log(err);
+            res.send(500, { success: false, message: err.message })
+        }
+    }
+})
 
 route.post('/save', jwtauth, async function (req, res, next) {
     if (!res.headersSent) {
