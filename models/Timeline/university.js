@@ -13,6 +13,10 @@ const universityTimeline= new mongoose.Schema({
         type: String,
         require:true
     },
+    courseCategory:{
+        type: String,
+        require:true
+    },
     courseName:{
         type: String,
         require:true
