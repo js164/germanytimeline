@@ -8,7 +8,7 @@ const session=require('express-session')
 const MongoStore=require('connect-mongo')
 const cors = require('cors');
 app.use(cors({
-    origin: 'http://localhost:3000'
+    origin: '*'
 }));
 
 
