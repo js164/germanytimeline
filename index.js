@@ -31,6 +31,7 @@ app.use('/auth',require('./routes/Auth/signup'))
 app.use('/university',require('./routes/Timeline/university'))
 app.use('/aps',require('./routes/Timeline/APS'))
 app.use('/visa',require('./routes/Timeline/Visa'))
+app.use('/contact',require('./routes/Timeline/Contact'))
 
 port=process.env.PORT || 8000
 const connectDB=require('./db')

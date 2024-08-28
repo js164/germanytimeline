@@ -4,19 +4,38 @@ const { jwtauth, adminAuth } = require('../../AuthMiddlewere')
 const path = require('path');
 const fs = require('fs');
 const universityTimeline = require('../../models/Timeline/university')
-const timelineUser = require("../../models/Auth/user")
+const timelineUser = require("../../models/Auth/user");
+const Contact = require('../../models/Timeline/Contact');
 
 route.get('/all/:sortby', async function(req,res){
     if (!res.headersSent) {
         try{
             if(req.params.sortby === "courseName"){
-                const a= await universityTimeline.find().sort( { courseName: 1 } ).lean()
-                console.log(a);
-                res.send(200, { success: true, data: a })
+                const uni= await universityTimeline.find().sort( { courseName: 1 } ).lean()
+                console.log(uni);
+                var promises = uni.map(async (u,idx)=>{
+                    const contact = await Contact.findOne({ user: u.user._id })
+                    if(contact && contact.isPublic === "Public"){
+                        u["contact"]=contact
+                    }
+                    return u
+                })
+                Promise.all(promises).then(function(uni) {
+                    res.send(200, { success: true, data: uni })
+                })
             }else{
-                const a= await universityTimeline.find().sort( { universityName: 1 } ).lean()
-                console.log(a);
-                res.send(200, { success: true, data: a })
+                const uni= await universityTimeline.find().sort( { universityName: 1 } ).lean()
+                console.log(uni);
+                var promises = uni.map(async (u,idx)=>{
+                    const contact = await Contact.findOne({ user: u.user._id })
+                    if(contact && contact.isPublic === "Public"){
+                        u["contact"]=contact
+                    }
+                    return u
+                })
+                Promise.all(promises).then(function(uni) {
+                    res.send(200, { success: true, data: uni })
+                })
             }
         }catch(err){
             console.log(err)

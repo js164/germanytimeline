@@ -3,6 +3,7 @@ const route = express.Router()
 const { jwtauth, adminAuth } = require('../../AuthMiddlewere')
 const timelineUser = require("../../models/Auth/user")
 const VisaTimeline = require("../../models/Timeline/Visa")
+const Contact = require('../../models/Timeline/Contact')
 
 route.get('/',jwtauth, async function(req, res, next){
     if (!res.headersSent) {
@@ -22,7 +23,16 @@ route.get('/all', async function(req, res, next){
         try{
             const Visa = await VisaTimeline.find().sort( { appliedDate: -1 } ).lean()
             console.log(Visa);
-            res.send(200, { success: true, data: Visa, message: "Visa Successfully fetched!" })
+            var promises = Visa.map(async (v,idx)=>{
+                const contact = await Contact.findOne({ user: v.user._id })
+                if(contact && contact.isPublic === "Public"){
+                    v["contact"]=contact
+                }
+                return v
+            })
+            Promise.all(promises).then(function(Visa) {
+                res.send(200, { success: true, data: Visa, message: "Visa Successfully fetched!" })
+            })
         }catch(err){
             console.log(err);
             res.send(500, { success: false, message: err.message })
