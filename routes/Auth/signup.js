@@ -1,43 +1,53 @@
 const express = require('express')
 const route = express.Router()
 const passport = require('passport')
-const { hashSync , compareSync} = require('bcrypt')
+const { hashSync, compareSync } = require('bcrypt')
 const LocalStrategy = require('passport-local').Strategy;
 const timelineUser = require('../../models/Auth/user')
 var jwt = require('jsonwebtoken');
 require('../../passport')
-const {jwtauth}=require('../../AuthMiddlewere')
+const { jwtauth } = require('../../AuthMiddlewere')
+const sendVerificationEmail = require('../../email/email')
 
-route.get('/profile',jwtauth, function (req, res, next) {
+route.get('/profile', jwtauth, function (req, res, next) {
     if (!res.headersSent) {
         res.send("welcome")
     }
 
 });
 
-route.post('/signup', function (req, res) {
+route.post('/signup', async function (req, res) {
+
+    const userCheck = await timelineUser.findOne({ email: req.body.email })
+    if (userCheck) {
+        res.send({
+            status: 400,
+            success: false,
+            message: "User Already Exist!",
+        })
+    }else{
+
+    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
     const usermodel = new timelineUser({
+        email: req.body.email,
         username: req.body.username,
         password: hashSync(req.body.password, 10),
-        userId: new Date().toISOString().replaceAll(/[-.:TZ]/g, '') + Math.random().toString().substring(2,7)
+        userId: new Date().toISOString().replaceAll(/[-.:TZ]/g, '') + Math.random().toString().substring(2, 7),
+        isActive: false,
+        verificationToken: verificationToken,
+        verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
     })
-    usermodel.save().then((user) => {
+    usermodel.save().then(async (user) => {
 
-        let payload = {
-            username: user.username,
-            _id: user._id
-        }
-
-        const access_token = jwt.sign(payload, process.env.JWTtoken, { expiresIn: "30m" });
-        const refresh_token = jwt.sign(payload, process.env.JWTRefreshToken, { expiresIn: "30d" });
+        // await sendVerificationEmail(req.body.email, verificationToken)
+        
         res.send({
             success: true,
             message: "New User Successfully Created!",
             user: {
-                username: user.username,
-                access_token: access_token,
-                refresh_token: refresh_token,
-                userId: user.userId
+                email: user.email,
+                userId: user.userId,
+                isActive: user.isActive
             }
         })
     }).catch(err => {
@@ -47,12 +57,62 @@ route.post('/signup', function (req, res) {
             error: err
         })
     })
-
+}
 
 })
 
+route.post('/verifyotp', async function (req, res) {
+    try{
+    const user = await timelineUser.findOne({ 
+            userId: req.body.userId,
+            verificationToken: req.body.otp,
+			verificationTokenExpiresAt: { $gt: Date.now() }
+     })
+     console.log(user);
+    if (user) {
+        if (user.verificationToken === req.body.otp) {
+
+            await timelineUser.findByIdAndUpdate(user._id,{isActive:true}) 
+
+            let payload = {
+                email: user.email,
+                username: user.username,
+                _id: user._id
+            }
+
+            const access_token = jwt.sign(payload, process.env.JWTtoken, { expiresIn: "30m" });
+            const refresh_token = jwt.sign(payload, process.env.JWTRefreshToken, { expiresIn: "30d" });
+            res.send({
+                success: true,
+                message: "User Successfully Verified!",
+                user: {
+                    email: user.email,
+                    username: user.username,
+                    access_token: access_token,
+                    refresh_token: refresh_token,
+                    userId: user.userId,
+                    isActive: user.isActive
+                }
+            })
+        }
+    }
+    else{
+        res.send({
+            status: 400,
+            success: false,
+            message: "Invalid or expired verification code!",
+        })
+    }
+}catch{
+    res.send({
+        success: false,
+        message: "Something wents wrong!",
+    })
+    }
+})
+
 route.post('/login', (req, res) => {
-    timelineUser.findOne({ username: req.body.username }).then((user, err) => {
+    timelineUser.findOne({ email: req.body.email }).then((user, err) => {
         if (err) {
             return res.send({
                 success: false,
@@ -72,27 +132,45 @@ route.post('/login', (req, res) => {
                     message: "password not match!"
                 })
             }
-            let payload = {
-                username: user.username,
-                _id: user._id
-            }
 
-            const access_token = jwt.sign(payload, process.env.JWTtoken, { expiresIn: "30m" });
-            const refresh_token = jwt.sign(payload, process.env.JWTRefreshToken, { expiresIn: "30d" });
-            return res.send({
-                success: true,
-                message: "your are Successfully Logged In!",
-                user: {
+            if(user.isActive){
+                let payload = {
+                    email: user.email,
                     username: user.username,
-                    access_token: access_token,
-                    refresh_token: refresh_token,
-                    userId: user.userId
+                    _id: user._id
                 }
-            })
+    
+                const access_token = jwt.sign(payload, process.env.JWTtoken, { expiresIn: "30m" });
+                const refresh_token = jwt.sign(payload, process.env.JWTRefreshToken, { expiresIn: "30d" });
+                return res.send({
+                    success: true,
+                    message: "your are Successfully Logged In!",
+                    user: {
+                        email: user.email,
+                        username: user.username,
+                        access_token: access_token,
+                        refresh_token: refresh_token,
+                        userId: user.userId,
+                        isActive: user.isActive
+                    }
+                })
+            }else{
+                return res.send({
+                    success: true,
+                    message: "your email verification is pending!",
+                    user: {
+                        email: user.email,
+                        userId: user.userId,
+                        isActive: user.isActive
+                    }
+                })
+            }
 
         }
     })
 });
+
+
 
 route.post('/refresh', function (req, res) {
     if (!req.body["refresh_token"]) {
@@ -114,7 +192,7 @@ route.post('/refresh', function (req, res) {
                 }
 
                 const access_token = jwt.sign(payload, process.env.JWTtoken, { expiresIn: "30m" });
-                
+
                 return res.send({
                     success: true,
                     user: {
@@ -132,13 +210,13 @@ route.post('/refresh', function (req, res) {
 
 
 
-route.get('/logout',jwtauth, (req, res) => {
-    req.logout(function(err) {
-        if (err) { 
-          return next(err); 
-          }
-        res.send(200,{success:true})
-      });
+route.get('/logout', jwtauth, (req, res) => {
+    req.logout(function (err) {
+        if (err) {
+            return next(err);
+        }
+        res.send(200, { success: true })
+    });
 })
 
 module.exports = route;

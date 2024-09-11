@@ -1,13 +1,14 @@
 const mongoose=require('mongoose')
 
 const timelineUser= new mongoose.Schema({
-    googleID:{
-        type: String,
-        default:JSON.stringify(Date.now),
-    },
     userId:{
         type: String,
         require:true
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true,
     },
     displayName:{
         type: String,
@@ -18,8 +19,15 @@ const timelineUser= new mongoose.Schema({
     password:{
         type:String,
     },
-    image:{
+    isActive:{
+        type: Boolean,
+        default: false
+    },
+    verificationToken:{
         type: String,
+    },
+    verificationTokenExpiresAt:{
+        type : Date
     },
     createdAt:{
         type: Date,
