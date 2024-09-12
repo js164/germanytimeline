@@ -25,89 +25,128 @@ route.post('/signup', async function (req, res) {
             success: false,
             message: "User Already Exist!",
         })
-    }else{
+    } else {
 
-    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
-    const usermodel = new timelineUser({
-        email: req.body.email,
-        username: req.body.username,
-        password: hashSync(req.body.password, 10),
-        userId: new Date().toISOString().replaceAll(/[-.:TZ]/g, '') + Math.random().toString().substring(2, 7),
-        isActive: false,
-        verificationToken: verificationToken,
-        verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
-    })
-    usermodel.save().then(async (user) => {
-
-        // await sendVerificationEmail(req.body.email, verificationToken)
-        
-        res.send({
-            success: true,
-            message: "New User Successfully Created!",
-            user: {
-                email: user.email,
-                userId: user.userId,
-                isActive: user.isActive
-            }
+        const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
+        const usermodel = new timelineUser({
+            email: req.body.email,
+            username: req.body.username,
+            password: hashSync(req.body.password, 10),
+            userId: new Date().toISOString().replaceAll(/[-.:TZ]/g, '') + Math.random().toString().substring(2, 7),
+            isActive: false,
+            verificationToken: verificationToken,
+            verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
         })
-    }).catch(err => {
-        res.send({
-            success: false,
-            message: "Something wents wrong!",
-            error: err
-        })
-    })
-}
+        usermodel.save().then(async (user) => {
 
-})
+            // await sendVerificationEmail(req.body.email, verificationToken)
 
-route.post('/verifyotp', async function (req, res) {
-    try{
-    const user = await timelineUser.findOne({ 
-            userId: req.body.userId,
-            verificationToken: req.body.otp,
-			verificationTokenExpiresAt: { $gt: Date.now() }
-     })
-     console.log(user);
-    if (user) {
-        if (user.verificationToken === req.body.otp) {
-
-            await timelineUser.findByIdAndUpdate(user._id,{isActive:true}) 
-
-            let payload = {
-                email: user.email,
-                username: user.username,
-                _id: user._id
-            }
-
-            const access_token = jwt.sign(payload, process.env.JWTtoken, { expiresIn: "30m" });
-            const refresh_token = jwt.sign(payload, process.env.JWTRefreshToken, { expiresIn: "30d" });
             res.send({
                 success: true,
-                message: "User Successfully Verified!",
+                message: "New User Successfully Created!",
                 user: {
                     email: user.email,
-                    username: user.username,
-                    access_token: access_token,
-                    refresh_token: refresh_token,
                     userId: user.userId,
                     isActive: user.isActive
                 }
             })
-        }
-    }
-    else{
-        res.send({
-            status: 400,
-            success: false,
-            message: "Invalid or expired verification code!",
+        }).catch(err => {
+            res.send({
+                success: false,
+                message: "Something wents wrong!",
+                error: err
+            })
         })
     }
-}catch{
-    res.send({
-        success: false,
-        message: "Something wents wrong!",
-    })
+
+})
+
+route.post('/verifyotp', async function (req, res) {
+    try {
+        const user = await timelineUser.findOne({
+            userId: req.body.userId,
+            verificationToken: req.body.otp,
+            verificationTokenExpiresAt: { $gt: Date.now() }
+        })
+        console.log(user);
+        if (user) {
+            if (user.verificationToken === req.body.otp) {
+
+                await timelineUser.findByIdAndUpdate(user._id, { isActive: true })
+
+                let payload = {
+                    email: user.email,
+                    username: user.username,
+                    _id: user._id
+                }
+
+                const access_token = jwt.sign(payload, process.env.JWTtoken, { expiresIn: "30m" });
+                const refresh_token = jwt.sign(payload, process.env.JWTRefreshToken, { expiresIn: "30d" });
+                res.send({
+                    success: true,
+                    message: "User Successfully Verified!",
+                    user: {
+                        email: user.email,
+                        username: user.username,
+                        access_token: access_token,
+                        refresh_token: refresh_token,
+                        userId: user.userId,
+                        isActive: user.isActive
+                    }
+                })
+            }
+        }
+        else {
+            res.send({
+                status: 400,
+                success: false,
+                message: "Invalid or expired verification code!",
+            })
+        }
+    } catch {
+        res.send({
+            success: false,
+            message: "Something wents wrong!",
+        })
+    }
+})
+
+route.post('/resendotp', async function (req, res) {
+    console.log("resend.....");
+    console.log(res.body);
+    try {
+        const user = await timelineUser.findOne({ email: req.body.email })
+        console.log(user);
+        if (!user) {
+            res.send({
+                status: 400,
+                success: false,
+                message: "User with this email id not found!",
+            })
+        } else {
+            const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
+            const updatedUser = await timelineUser.findByIdAndUpdate(user._id,{
+                verificationToken: verificationToken,
+                verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+            })
+
+            // await sendVerificationEmail(updatedUser.email, verificationToken)
+
+            res.send({
+                success: true,
+                message: "OTP successfully sent!",
+                user: {
+                    email: user.email,
+                    userId: user.userId
+                }
+            })
+        }
+
+    } catch {
+        res.send({
+            success: false,
+            message: "Something wents wrong!",
+        })
     }
 })
 
@@ -133,13 +172,13 @@ route.post('/login', (req, res) => {
                 })
             }
 
-            if(user.isActive){
+            if (user.isActive) {
                 let payload = {
                     email: user.email,
                     username: user.username,
                     _id: user._id
                 }
-    
+
                 const access_token = jwt.sign(payload, process.env.JWTtoken, { expiresIn: "30m" });
                 const refresh_token = jwt.sign(payload, process.env.JWTRefreshToken, { expiresIn: "30d" });
                 return res.send({
@@ -154,7 +193,7 @@ route.post('/login', (req, res) => {
                         isActive: user.isActive
                     }
                 })
-            }else{
+            } else {
                 return res.send({
                     success: true,
                     message: "your email verification is pending!",
