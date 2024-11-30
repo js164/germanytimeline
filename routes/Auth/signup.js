@@ -39,7 +39,7 @@ route.post('/signup', async function (req, res) {
         })
         usermodel.save().then(async (user) => {
 
-            // await sendVerificationEmail(req.body.email, verificationToken)
+            await sendVerificationEmail(req.body.email, verificationToken)
 
             res.send({
                 success: true,
@@ -130,7 +130,7 @@ route.post('/resendotp', async function (req, res) {
                 verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
             })
 
-            // await sendVerificationEmail(updatedUser.email, verificationToken)
+            await sendVerificationEmail(updatedUser.email, verificationToken)
 
             res.send({
                 success: true,
@@ -151,7 +151,7 @@ route.post('/resendotp', async function (req, res) {
 })
 
 route.post('/login', (req, res) => {
-    timelineUser.findOne({ email: req.body.email }).then((user, err) => {
+    timelineUser.findOne({ email: req.body.email }).then(async (user, err) => {
         if (err) {
             return res.send({
                 success: false,
@@ -194,6 +194,15 @@ route.post('/login', (req, res) => {
                     }
                 })
             } else {
+                const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
+
+                const updatedUser = await timelineUser.findByIdAndUpdate(user._id,{
+                    verificationToken: verificationToken,
+                    verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+                })
+
+                await sendVerificationEmail(user.email, verificationToken)
+
                 return res.send({
                     success: true,
                     message: "your email verification is pending!",

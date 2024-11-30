@@ -1,5 +1,3 @@
-// import { VERIFICATION_EMAIL_TEMPLATE } from "./emailTemplate";
-// import { mailTrapClient, mailTrapSender } from "./mailtrap.config";
 const Templates = require("./emailTemplate");
 const { mailTrapClient, mailTrapSender } = require("./mailtrap.config");
 
@@ -7,8 +5,6 @@ const { mailTrapClient, mailTrapSender } = require("./mailtrap.config");
 
 const sendVerificationEmail = async (email, verificationToken) => {
 	const recipient = [{ email }];
-	console.log(email);
-	console.log(verificationToken);
 
 	try {
 		const response = await mailTrapClient.send({
