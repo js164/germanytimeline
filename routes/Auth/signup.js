@@ -63,8 +63,9 @@ route.post('/signup', async function (req, res) {
 
 route.post('/verifyotp', async function (req, res) {
     try {
+        console.log(req.body);
         const user = await timelineUser.findOne({
-            userId: req.body.userId,
+            email: req.body.email,
             verificationToken: req.body.otp,
             verificationTokenExpiresAt: { $gt: Date.now() }
         })
@@ -218,6 +219,51 @@ route.post('/login', (req, res) => {
     })
 });
 
+
+route.post('/newPassword', async function (req, res) {
+    console.log("newPassword")
+    console.log(req.body);
+    timelineUser.findOne({ email: req.body.email }).then(async (user, err) => {
+        console.log(user);
+        if (err) {
+            return res.send({
+                success: false,
+                message: "Something wents wrong!",
+                error: err
+            })
+        }
+        if (!user) {
+            return res.send({
+                success: false,
+                message: "no user found!"
+            })
+        }
+        await timelineUser.findByIdAndUpdate(user._id,{password: hashSync(req.body.password, 10),}).then((newUser, error)=>{
+            let payload = {
+                email: newUser.email,
+                username: newUser.username,
+                _id: newUser._id
+            }
+
+            console.log(newUser);
+            const access_token = jwt.sign(payload, process.env.JWTtoken, { expiresIn: "30m" });
+            const refresh_token = jwt.sign(payload, process.env.JWTRefreshToken, { expiresIn: "30d" });
+            res.send({
+                success: true,
+                message: "User Successfully Verified!",
+                user: {
+                    email: newUser.email,
+                    username: newUser.username,
+                    access_token: access_token,
+                    refresh_token: refresh_token,
+                    userId: newUser.userId,
+                    isActive: newUser.isActive
+                }
+            })
+        })
+
+    })
+})
 
 
 route.post('/refresh', function (req, res) {
